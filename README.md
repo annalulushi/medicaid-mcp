@@ -57,9 +57,9 @@ src/medicaid_mcp/
   apps/         # MCP Apps: ui:// resources (v1.1)
 ```
 
-The design doc calls this package `cms_medicaid_mcp`; `medicaid_mcp` is shown here because it matches the
-distribution name in `pyproject.toml` and the repository. That is a recommendation, not a settled decision —
-see "Decisions to settle" in the implementation plan.
+The design doc calls this package `cms_medicaid_mcp`. That is **overruled as of 2026-09-23**: the package is
+`medicaid_mcp`, matching the distribution name in `pyproject.toml`, the repository, and the GitHub URL. The
+build backend is `hatchling`. Both decisions are recorded in the implementation plan.
 
 - **Transport:** streamable HTTP (stateless, JSON responses) at `/mcp`; stdio for local development. SSE is deprecated and will not be implemented.
 - **Errors:** raised as `ToolError` with the recovery hint folded into the message, not returned as a fake-success payload.
@@ -74,6 +74,10 @@ The design doc was written 2026-07-20 and targets dates that have since passed. 
 - **API surface:** `MCPServer` as the class name, with `stateless_http` / `json_response` kwargs.
 
 If any of these turns out false, the design doc gets amended before code is written.
+
+### Verified upstream API (2026-09-23)
+
+The data.medicaid.gov side **has** been checked: all three DKAN endpoints are live and the catalog holds 277 datasets. Five findings correct the design doc — `search` returns an object rather than an array, the id field is `identifier` not `id`, column schema requires a second request, `?show-reference-ids` is mandatory to reach the datastore, and the 500-row cap is ours to enforce rather than the API's. Details in the [implementation plan](.claude/docs/2026-09-23-impl-plan.md).
 
 ## Requirements
 
