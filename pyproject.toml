@@ -1,7 +1,24 @@
 [project]
 name = "medicaid-mcp"
 version = "0.1.0"
-description = "Add your description here"
+description = "An MCP server wrapping the data.medicaid.gov API so Claude and other MCP clients can explore US Medicaid and CHIP open data."
 readme = "README.md"
 requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Anna Lulushi", email = "annalulushi@gmail.com" }]
+keywords = ["mcp", "medicaid", "chip", "cms", "open-data", "dkan", "nadac"]
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
+
+# Empty on purpose: no server code exists yet. The design targets the official
+# `mcp` Python SDK v2 (pinned <2.1) and httpx — see .claude/docs/2026-07-21-mcp-plan.md
 dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/annalulushi/medicaid-mcp"
+Repository = "https://github.com/annalulushi/medicaid-mcp"
