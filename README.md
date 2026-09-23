@@ -41,7 +41,9 @@ Intended call pattern: `search_datasets` → `list_dataset_columns` → `query_d
 - `get_quality_measures` — Child/Adult Core Set performance measures.
 - `whats_new_medicaid` — recently modified datasets.
 
-Lens targets assume dataset shapes that have **not** been verified against the live API. The discovery pass that confirms them runs early (step 2) precisely because everything downstream depends on it; lenses that turn out to have no backing dataset get dropped and documented, not faked with a weak proxy.
+A ninth candidate, `list_1115_waivers`, is deferred: waiver data may not live on data.medicaid.gov at all.
+
+Only one lens target (`get_managed_care_enrollment`) has been verified against the live API so far. The rest assume dataset shapes that are still unconfirmed. The discovery pass that checks them runs early (step 2) because everything after it depends on the results. A lens with no backing dataset gets dropped and the gap documented, not faked with a weak proxy.
 
 ## Planned architecture
 
@@ -57,9 +59,8 @@ src/medicaid_mcp/
   apps/         # MCP Apps: ui:// resources (v1.1)
 ```
 
-The design doc calls this package `cms_medicaid_mcp`. That is **overruled as of 2026-09-23**: the package is
-`medicaid_mcp`, matching the distribution name in `pyproject.toml`, the repository, and the GitHub URL. The
-build backend is `hatchling`. Both decisions are recorded in the implementation plan.
+The package is `medicaid_mcp` (the design doc's `cms_medicaid_mcp` is overruled) and the build backend is
+`hatchling`. The implementation plan records both decisions and the reasons for them.
 
 - **Transport:** streamable HTTP (stateless, JSON responses) at `/mcp`; stdio for local development. SSE is deprecated and will not be implemented.
 - **Errors:** raised as `ToolError` with the recovery hint folded into the message, not returned as a fake-success payload.
@@ -77,7 +78,15 @@ If any of these turns out false, the design doc gets amended before code is writ
 
 ### Verified upstream API (2026-09-23)
 
-The data.medicaid.gov side **has** been checked: all three DKAN endpoints are live and the catalog holds 277 datasets. Five findings correct the design doc — `search` returns an object rather than an array, the id field is `identifier` not `id`, column schema requires a second request, `?show-reference-ids` is mandatory to reach the datastore, and the 500-row cap is ours to enforce rather than the API's. Details in the [implementation plan](.claude/docs/2026-09-23-impl-plan.md).
+The data.medicaid.gov side **has** been checked: all three DKAN endpoints are live and the catalog holds 277 datasets. Five findings correct the design doc:
+
+- `search` returns an object, not an array.
+- The id field is `identifier`, not `id`.
+- Column schema needs a second request.
+- `?show-reference-ids` is required to reach the datastore.
+- The 500-row cap is ours to enforce, not the API's.
+
+There is also one hazard: at least one dataset types every column as `text`, including counts, so a naive `>`/`<` filter would compare values as strings and return wrong rows. The filter DSL will cast or refuse those comparisons, never run them silently. Details are in the [implementation plan](.claude/docs/2026-09-23-impl-plan.md).
 
 ## Requirements
 
@@ -99,11 +108,11 @@ Planned environment variables. None are secrets — the upstream API is open.
 
 | Variable | Default |
 | --- | --- |
-| `CMS_MEDICAID_BASE_URL` | `https://data.medicaid.gov` |
-| `CMS_MEDICAID_TIMEOUT` | `30` (seconds) |
-| `CMS_MEDICAID_CACHE_TTL_SEARCH` | `900` |
-| `CMS_MEDICAID_CACHE_TTL_META` | `3600` |
-| `CMS_MEDICAID_LOG_LEVEL` | `INFO` |
+| `MEDICAID_MCP_BASE_URL` | `https://data.medicaid.gov` |
+| `MEDICAID_MCP_TIMEOUT` | `30` (seconds) |
+| `MEDICAID_MCP_CACHE_TTL_SEARCH` | `900` |
+| `MEDICAID_MCP_CACHE_TTL_META` | `3600` |
+| `MEDICAID_MCP_LOG_LEVEL` | `INFO` |
 | `PORT` | `8000` |
 
 ## Testing
@@ -124,7 +133,7 @@ Planned, TDD throughout: `query.py` (table-driven, no network) → `client.py` e
 9. Deploy, smoke test, client setup docs *(the status banner above comes off here — not before)*
 10. *(v1.1)* MCP Apps views for enrollment trend and NADAC price history
 
-Steps 3 and 5 can run in parallel; everything else is sequential. Discovery sits at step 2 rather than late in the sequence because the fixtures it captures are what steps 4 and 8 are tested against.
+Steps 3 and 5 can run in parallel; everything else is sequential. Discovery comes at step 2 rather than near the end because steps 4 and 8 are tested against the fixtures it captures, and step 3's handling of `text`-typed columns depends on what it finds.
 
 See the [design document](.claude/docs/2026-07-21-mcp-plan.md) for non-goals and reasoning, and the [implementation plan](.claude/docs/2026-09-23-impl-plan.md) for per-step deliverables, done-when criteria, and risks.
 
