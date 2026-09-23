@@ -8,7 +8,7 @@ An MCP server that wraps the [data.medicaid.gov](https://data.medicaid.gov) API 
 > MCP server.
 >
 > - [`.claude/docs/2026-07-21-mcp-plan.md`](.claude/docs/2026-07-21-mcp-plan.md) — design: what and why
-> - [`.claude/docs/2026-09-23-impl-plan.md`](.claude/docs/2026-09-23-impl-plan.md) — implementation: order and done-when
+> - [`.claude/docs/2026-09-23-impl-plan.md`](.claude/docs/2026-09-23-impl-plan.md) — implementation: order and done-when. Where the two disagree, the implementation plan wins.
 
 ## What it will do
 
@@ -32,24 +32,26 @@ Intended call pattern: `search_datasets` → `list_dataset_columns` → `query_d
 
 ### Planned lenses
 
-- `get_state_enrollment_snapshot` — recent monthly Medicaid/CHIP enrollment for one state.
-- `compare_states_enrollment_trend` — multi-state trend, shaped for summarization or charting.
-- `get_state_eligibility_renewals` — renewal/termination churn.
-- `get_drug_price_nadac` — National Average Drug Acquisition Cost lookups.
-- `get_state_drug_utilization` — units, prescriptions, and amounts reimbursed.
-- `get_managed_care_enrollment` — enrollment by plan and program type.
-- `get_quality_measures` — Child/Adult Core Set performance measures.
-- `whats_new_medicaid` — recently modified datasets.
+Numbered to match the design doc and implementation plan, which refer to lenses by number.
+
+1. `get_state_enrollment_snapshot` — recent monthly Medicaid/CHIP enrollment for one state.
+2. `compare_states_enrollment_trend` — multi-state trend, shaped for summarization or charting.
+3. `get_state_eligibility_renewals` — renewal/termination churn.
+4. `get_drug_price_nadac` — National Average Drug Acquisition Cost lookups.
+5. `get_state_drug_utilization` — units, prescriptions, and amounts reimbursed.
+6. `get_managed_care_enrollment` — enrollment by plan and program type.
+7. `get_quality_measures` — Child/Adult Core Set performance measures.
+8. `whats_new_medicaid` — recently modified datasets.
 
 A ninth candidate, `list_1115_waivers`, is deferred: waiver data may not live on data.medicaid.gov at all.
 
-Only one lens target (`get_managed_care_enrollment`) has been verified against the live API so far. The rest assume dataset shapes that are still unconfirmed. The discovery pass that checks them runs early (step 2) because everything after it depends on the results. A lens with no backing dataset gets dropped and the gap documented, not faked with a weak proxy.
+Only lens #6 has a target verified against the live API so far. The rest assume dataset shapes that are still unconfirmed. The discovery pass that checks them runs early (step 2) because everything after it depends on the results. A lens with no backing dataset gets dropped and the gap documented, not faked with a weak proxy.
 
 ## Planned architecture
 
 ```
 src/medicaid_mcp/
-  server.py     # MCPServer instance, instructions, ASGI app, http + stdio entrypoints
+  server.py     # Server instance, instructions, ASGI app, http + stdio entrypoints
   client.py     # DKAN API client (httpx), typed error mapping
   query.py      # Friendly filter shape → DKAN query JSON (pure, no network)
   cache.py      # In-memory TTL cache
@@ -59,14 +61,21 @@ src/medicaid_mcp/
   apps/         # MCP Apps: ui:// resources (v1.1)
 ```
 
-The package is `medicaid_mcp` (the design doc's `cms_medicaid_mcp` is overruled) and the build backend is
-`hatchling`. The implementation plan records both decisions and the reasons for them.
-
 - **Transport:** streamable HTTP (stateless, JSON responses) at `/mcp`; stdio for local development. SSE is deprecated and will not be implemented.
 - **Errors:** raised as `ToolError` with the recovery hint folded into the message, not returned as a fake-success payload.
 - **Deployment:** single container on a scale-to-zero host (Cloud Run or Railway are the leading candidates). No secrets, no database, no session affinity.
 
-### Unverified targets
+### Settled decisions (2026-09-23)
+
+These overrule the design doc; the implementation plan records the reasoning.
+
+- **Package:** `medicaid_mcp`, not `cms_medicaid_mcp`.
+- **Build backend:** `hatchling`.
+- **Env-var prefix:** `MEDICAID_MCP_*`, not `CMS_MEDICAID_*`.
+
+## What has and hasn't been verified
+
+### Not yet verified
 
 The design doc was written 2026-07-20 and targets dates that have since passed. These are **stated intentions, not confirmed facts**, and step 0 of the implementation plan gates all coding on checking them:
 
@@ -76,9 +85,9 @@ The design doc was written 2026-07-20 and targets dates that have since passed. 
 
 If any of these turns out false, the design doc gets amended before code is written.
 
-### Verified upstream API (2026-09-23)
+### Verified: upstream API (2026-09-23)
 
-The data.medicaid.gov side **has** been checked: all three DKAN endpoints are live and the catalog holds 277 datasets. Five findings correct the design doc:
+All three data.medicaid.gov DKAN endpoints are live and the catalog holds 277 datasets. Five findings correct the design doc:
 
 - `search` returns an object, not an array.
 - The id field is `identifier`, not `id`.
@@ -104,16 +113,18 @@ uv run main.py   # currently prints "Hello from medicaid-mcp!"
 
 ## Configuration
 
-Planned environment variables. None are secrets — the upstream API is open.
+Planned environment variables. None are secrets — the upstream API is open. The design doc still lists these under the old `CMS_MEDICAID_*` prefix; the names below are the settled ones.
 
-| Variable | Default |
-| --- | --- |
-| `MEDICAID_MCP_BASE_URL` | `https://data.medicaid.gov` |
-| `MEDICAID_MCP_TIMEOUT` | `30` (seconds) |
-| `MEDICAID_MCP_CACHE_TTL_SEARCH` | `900` |
-| `MEDICAID_MCP_CACHE_TTL_META` | `3600` |
-| `MEDICAID_MCP_LOG_LEVEL` | `INFO` |
-| `PORT` | `8000` |
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `MEDICAID_MCP_BASE_URL` | `https://data.medicaid.gov` | Upstream API root |
+| `MEDICAID_MCP_TIMEOUT` | `30` | Request timeout, seconds |
+| `MEDICAID_MCP_CACHE_TTL_SEARCH` | `900` | Search-result cache lifetime, seconds |
+| `MEDICAID_MCP_CACHE_TTL_META` | `3600` | Dataset-metadata cache lifetime, seconds |
+| `MEDICAID_MCP_LOG_LEVEL` | `INFO` | Log level |
+| `PORT` | `8000` | HTTP listen port; unprefixed because hosting platforms set it |
+
+Row data is never cached.
 
 ## Testing
 
@@ -121,7 +132,7 @@ Planned, TDD throughout: `query.py` (table-driven, no network) → `client.py` e
 
 ## Roadmap
 
-0. **Verify the aged assumptions** — SDK, protocol, and API surface (gates everything below)
+0. **Verify the aged assumptions** — SDK, protocol, and server API surface (gates everything below)
 1. Scaffold `src/medicaid_mcp/`, pin dependencies, commit `uv.lock`
 2. **Dataset discovery pass** against the live API — confirm lens targets, capture fixtures
 3. `query.py` — filter DSL translator
@@ -131,7 +142,7 @@ Planned, TDD throughout: `query.py` (table-driven, no network) → `client.py` e
 7. `server.py` — instructions, both transports, `Dockerfile`
 8. Lenses
 9. Deploy, smoke test, client setup docs *(the status banner above comes off here — not before)*
-10. *(v1.1)* MCP Apps views for enrollment trend and NADAC price history
+10. *(v1.1)* MCP Apps views for enrollment trend (lenses #1/#2) and NADAC price history (lens #4)
 
 Steps 3 and 5 can run in parallel; everything else is sequential. Discovery comes at step 2 rather than near the end because steps 4 and 8 are tested against the fixtures it captures, and step 3's handling of `text`-typed columns depends on what it finds.
 
