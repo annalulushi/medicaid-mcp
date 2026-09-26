@@ -17,7 +17,7 @@ A hybrid server over the data.medicaid.gov DKAN API (OpenAPI 3.0.2, no auth):
 - a **thin generic query layer** so ad-hoc questions are answerable at all, and
 - a set of **curated lenses** for the questions people actually repeat — enrollment trends, drug pricing (NADAC), renewals/unwinding, managed care, and quality measures.
 
-It is distinct from the separate Medicare Coverage MCP (Part B NCDs/LCDs): different dataset, different audience, different server.
+It is distinct from Anthropic's [CMS Coverage connector](https://academy.claude.com/tutorials/using-the-cms-coverage-connector-in-claude), which covers Medicare Part B coverage policy (NCDs/LCDs, billing articles) from the Medicare Coverage Database: different dataset, different audience, different server. The two are complementary — e.g. whether Medicare covers a drug there, what Medicaid pays for it (NADAC) here.
 
 ### Planned generic tools
 
@@ -141,7 +141,7 @@ Planned, TDD throughout: `query.py` (table-driven, no network) → `client.py` e
 6. Generic tools
 7. `server.py` — instructions, both transports, `Dockerfile`
 8. Lenses
-9. Deploy, smoke test, client setup docs *(the status banner above comes off here — not before)*
+9. Deploy, smoke test, client setup docs, and optionally a Claude Code plugin package *(the status banner above comes off here — not before)*
 10. *(v1.1)* MCP Apps views for enrollment trend (lenses #1/#2) and NADAC price history (lens #4)
 
 Steps 3 and 5 can run in parallel; everything else is sequential. Discovery comes at step 2 rather than near the end because steps 4 and 8 are tested against the fixtures it captures, and step 3's handling of `text`-typed columns depends on what it finds.
