@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "medicaid-mcp"
 version = "0.1.0"
@@ -15,10 +19,37 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 
-# Empty on purpose: no server code exists yet. The design targets the official
-# `mcp` Python SDK v2 (pinned <2.1) and httpx — see .claude/docs/2026-07-21-mcp-plan.md
-dependencies = []
+# mcp pin settled at step 0 (2026-09-27) — see .claude/docs/2026-09-23-impl-plan.md.
+# httpx is declared directly because client.py uses it, not just transitively via mcp.
+dependencies = [
+    "httpx>=0.28.1",
+    "mcp>=2.2.0,<2.3",
+]
 
 [project.urls]
 Homepage = "https://github.com/annalulushi/medicaid-mcp"
 Repository = "https://github.com/annalulushi/medicaid-mcp"
+
+[dependency-groups]
+dev = [
+    "mypy>=2.3.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.9",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"                          # tools/lenses tests run over async in-memory sessions
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "BLE", "SIM"]   # BLE = blind except: enforces fail-loud
+
+[tool.mypy]
+python_version = "3.12"
+strict = true

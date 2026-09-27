@@ -3,7 +3,7 @@
 An MCP server that wraps the [data.medicaid.gov](https://data.medicaid.gov) API so Claude — and any MCP client — can explore US Medicaid and CHIP open data conversationally.
 
 > **Status: design only. Not implemented.**
-> This repository contains a `uv init` scaffold (`main.py` prints a greeting), a design document, and an
+> This repository contains an empty package skeleton (`src/medicaid_mcp/`, no tools yet), a design document, and an
 > implementation plan. None of the tools below exist yet, and nothing here is installable or runnable as an
 > MCP server.
 >
@@ -105,10 +105,12 @@ There is also one hazard: at least one dataset types every column as `text`, inc
 
 ```bash
 uv sync
-uv run main.py   # currently prints "Hello from medicaid-mcp!"
+uv run pytest                                  # no tests yet: exits 5 ("no tests ran") until step 3
+uv run ruff check . && uv run ruff format .
+uv run mypy src
 ```
 
-`main.py` is `uv init` residue and gets deleted at step 1. Once the server exists, this section will cover `uv run` entrypoints for both transports, MCP Inspector usage, and the `claude mcp add --transport http` / claude.ai connector setup.
+Once the server exists, this section will cover `uv run` entrypoints for both transports, MCP Inspector usage, and the `claude mcp add --transport http` / claude.ai connector setup.
 
 ## Configuration
 
@@ -132,7 +134,7 @@ Planned, TDD throughout: `query.py` (table-driven, no network) → `client.py` e
 ## Roadmap
 
 0. ~~**Verify the aged assumptions** — SDK, protocol, and server API surface~~ — done 2026-09-27
-1. Scaffold `src/medicaid_mcp/`, pin dependencies, commit `uv.lock`
+1. ~~Scaffold `src/medicaid_mcp/`, pin dependencies, commit `uv.lock`~~ — done 2026-09-27
 2. **Dataset discovery pass** against the live API — confirm lens targets, capture fixtures
 3. `query.py` — filter DSL translator
 4. `client.py` — DKAN client and typed error mapping

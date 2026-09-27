@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-Design-only. No server code exists yet: `main.py` is a `uv init` greeting stub (deleted at step 1), and `pyproject.toml` has `dependencies = []` and no `[build-system]`. Work proceeds by the numbered steps in the implementation plan. Step 0 is done (2026-09-27): `mcp` is pinned `>=2.2.0,<2.3`, and step 1 (package scaffold) is next, per `.claude/docs/2026-09-27-pkg-scaffolding.md`.
+Skeleton only. Steps 0 and 1 are done (2026-09-27): `mcp` is pinned `>=2.2.0,<2.3`, and `src/medicaid_mcp/` exists with every module a docstring only — no tools yet. Work proceeds by the numbered steps in the implementation plan; step 2 (dataset discovery) is next. Real code in each module arrives at the step that owns it, test-first.
 
 Three documents, in precedence order when they disagree:
 
@@ -16,21 +16,17 @@ Three documents, in precedence order when they disagree:
 
 ## Commands
 
-Available now:
+Build backend `hatchling`; dev deps `pytest`, `pytest-asyncio` (`asyncio_mode = "auto"`), `ruff`, `mypy` (strict).
 
 ```bash
 uv sync
-```
-
-Planned from step 1 (dev deps `pytest`, `pytest-asyncio`, `ruff`, `mypy`; build backend `hatchling`):
-
-```bash
-uv run pytest                                        # all tests
+uv run pytest                                        # all tests (exit 5 = none collected, expected until step 3)
 uv run pytest tests/test_query.py::test_name         # single test
 uv run ruff check . && uv run ruff format .
 uv run mypy src
-uv run python scripts/smoke.py                       # manual, hits the live API; never in CI
 ```
+
+Planned from step 9: `uv run python scripts/smoke.py` — manual, hits the live API; never in CI.
 
 Commit `uv.lock` (it is intentionally not gitignored).
 
