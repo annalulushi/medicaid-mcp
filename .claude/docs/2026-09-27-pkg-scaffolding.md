@@ -1,7 +1,7 @@
 # Package Scaffolding — Steps 0 and 1
 
 **Date:** 2026-09-27
-**Status:** Ready to execute
+**Status:** Phase A done 2026-09-27 (results in the impl plan, step 0). Phase B ready to execute; pin is `mcp>=2.2.0,<2.3`
 **Implements:** steps 0 and 1 of [2026-09-23-impl-plan.md](2026-09-23-impl-plan.md). Where this doc and the impl plan disagree, the impl plan wins. Layout follows the README's "Planned architecture" tree.
 **Why step 0 is folded in:** step 1 needs "the step-0-verified `mcp` pin", and step 0 was still open. So Phase A closes step 0 and Phase B scaffolds. **Phase B does not start until Phase A passes.**
 

@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-Design-only. No server code exists yet: `main.py` is a `uv init` greeting stub (deleted at step 1), and `pyproject.toml` has `dependencies = []` and no `[build-system]`. Work proceeds by the numbered steps in the implementation plan, and **step 0 gates everything** — do not pin `mcp` or write server code until its open checks are verified.
+Design-only. No server code exists yet: `main.py` is a `uv init` greeting stub (deleted at step 1), and `pyproject.toml` has `dependencies = []` and no `[build-system]`. Work proceeds by the numbered steps in the implementation plan. Step 0 is done (2026-09-27): `mcp` is pinned `>=2.2.0,<2.3`, and step 1 (package scaffold) is next, per `.claude/docs/2026-09-27-pkg-scaffolding.md`.
 
 Three documents, in precedence order when they disagree:
 
 1. `.claude/docs/2026-09-23-impl-plan.md` — order, done-when criteria, settled decisions, verified API findings. **Wins over the design doc.**
-2. `.claude/docs/2026-07-21-mcp-plan.md` — what and why (tool signatures, lenses, error model, non-goals). Stale on package name (`cms_medicaid_mcp`), env-var prefix (`CMS_MEDICAID_*`), step numbering, and the API facts corrected in the plan. Don't edit it to fix these; the plan records the overrides.
+2. `.claude/docs/2026-07-21-mcp-plan.md` — what and why (tool signatures, lenses, error model, non-goals). Stale on package name (`cms_medicaid_mcp`), env-var prefix (`CMS_MEDICAID_*`), the `mcp` `<2.1` pin, step numbering, and the API facts corrected in the plan. Don't edit it to fix these; the plan records the overrides.
 3. `README.md` — public; restates parts of the plan.
 
 **When plan content changes, update the matching README section in the same commit.** The plan's "Keeping the README in sync" table lists the pairs. The README's design-only banner comes off only after step 9's end-to-end check passes against the deployed URL.
@@ -43,7 +43,7 @@ Package `src/medicaid_mcp/`, a hybrid MCP server over the data.medicaid.gov DKAN
 - **`tools/generic.py`** is the MCP surface: `search_datasets`, `get_dataset`, `list_dataset_columns`, `query_dataset`. It validates input, calls query/client, shapes typed results (`models.py`) for structured output, and re-raises errors as `ToolError`.
 - **`tools/lenses.py`** has eight curated tools, each composing the internal `_query` helper (one query-construction code path). A ninth, `list_1115_waivers`, is deferred until step 2's discovery.
 
-Data flow: `query_dataset` (validate) → `query.translate` → `client.datastore_query` → shaped result. Caching (`cache.py`, in-memory): search 15 min, metadata 1 hour, rows never. `settings.py` reads `MEDICAID_MCP_*` env vars plus unprefixed `PORT`; README's Configuration table is the reference for names and defaults. Transport is stateless streamable HTTP with JSON responses at `/mcp`, plus stdio for local dev. No SSE.
+Data flow: `query_dataset` (validate) → `query.translate` → `client.datastore_query` → shaped result. Caching (`cache.py`, in-memory): search 15 min, metadata 1 hour, rows never. `settings.py` reads `MEDICAID_MCP_*` env vars plus unprefixed `PORT`; README's Configuration table is the reference for names and defaults. Transport is stateless streamable HTTP with JSON responses at `/mcp`, plus stdio for local dev. No SSE. In `mcp` 2.x, `stateless_http=True, json_response=True` go on `MCPServer.streamable_http_app()`, not the constructor.
 
 ## Non-obvious rules
 

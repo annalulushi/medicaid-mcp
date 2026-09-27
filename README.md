@@ -72,18 +72,17 @@ These overrule the design doc; the implementation plan records the reasoning.
 - **Package:** `medicaid_mcp`, not `cms_medicaid_mcp`.
 - **Build backend:** `hatchling`.
 - **Env-var prefix:** `MEDICAID_MCP_*`, not `CMS_MEDICAID_*`.
+- **SDK pin (2026-09-27):** `mcp>=2.2.0,<2.3`, not the design doc's `<2.1`.
 
 ## What has and hasn't been verified
 
-### Not yet verified
+### Verified: SDK and protocol (2026-09-27)
 
-The design doc was written 2026-07-20 and targets dates that have since passed. These are **stated intentions, not confirmed facts**, and step 0 of the implementation plan gates all coding on checking them:
+The design doc was written 2026-07-20 against dates that have since passed. Step 0 of the implementation plan checked its assumptions against primary sources:
 
-- **Protocol:** MCP revision 2026-07-28 (stateless request/response) — did it land as specified?
-- **SDK:** official `mcp` Python SDK v2, pinned `<2.1` — stable was targeted for 2026-07-27; did it ship?
-- **API surface:** `MCPServer` as the class name, with `stateless_http` / `json_response` kwargs.
-
-If any of these turns out false, the design doc gets amended before code is written.
+- **Protocol:** MCP revision 2026-07-28 landed as specified — no protocol-level sessions, no `initialize` handshake. HTTP+SSE is formally deprecated.
+- **SDK:** the official `mcp` Python SDK v2 shipped stable on 2026-07-28; 2.2.0 is current. Pinned `mcp>=2.2.0,<2.3`.
+- **API surface:** `MCPServer` is the class name. One correction: `stateless_http` / `json_response` are not constructor kwargs — they go on `streamable_http_app()`. The design doc is amended.
 
 ### Verified: upstream API (2026-09-23)
 
@@ -132,7 +131,7 @@ Planned, TDD throughout: `query.py` (table-driven, no network) → `client.py` e
 
 ## Roadmap
 
-0. **Verify the aged assumptions** — SDK, protocol, and server API surface (gates everything below)
+0. ~~**Verify the aged assumptions** — SDK, protocol, and server API surface~~ — done 2026-09-27
 1. Scaffold `src/medicaid_mcp/`, pin dependencies, commit `uv.lock`
 2. **Dataset discovery pass** against the live API — confirm lens targets, capture fixtures
 3. `query.py` — filter DSL translator
