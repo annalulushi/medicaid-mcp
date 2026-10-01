@@ -45,7 +45,7 @@ Data flow: `query_dataset` (validate) → `query.translate` → `client.datastor
 
 - **Errors go through `ToolError` with the recovery hint in the message** (e.g. "Call list_dataset_columns(...)"). Never return a success-shaped error payload or an empty result where an error occurred.
 - **Verified API facts that contradict the design doc** (full details in the plan, step 0):
-  - `/api/1/search` returns `results` as an object keyed by URI, so iterate `.values()`.
+  - `/api/1/search` returns `results` as an object keyed by URI when there are hits, but `[]` when there are none. Handle both shapes.
   - The id field is `identifier`, not `id`.
   - Column schema is not in the metastore item. `get_dataset` makes two requests: metastore item → distribution `identifier` → `/api/1/datastore/query/{distributionId}`.
   - Metastore requests need `?show-reference-ids`, or the distribution has no id.

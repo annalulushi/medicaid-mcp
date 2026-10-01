@@ -173,9 +173,9 @@ Answer each in the Findings subsection with evidence (dataset id, column, observ
 - **Open questions:** each one in C has a written answer that cites a dataset id and column.
 - **Fixtures:**
   - `uv run python scripts/capture_fixtures.py` exits 0.
-  - Every fixture file is listed in `manifest.json` and vice versa. Check this with a one-liner comparing `ls tests/fixtures/*.json` against the manifest keys.
+  - Every fixture file is listed in `manifest.json` and vice versa. Check this with a one-liner comparing `ls tests/fixtures/*.json`, excluding `manifest.json` itself, against the manifest keys.
   - Each non-200 fixture's status matches its `expect_status`.
-- **Failure path:** temporarily set one `expect_status` wrong and rerun. The script must exit non-zero and leave `tests/fixtures/` unchanged (`git status` clean). Then revert the change.
+- **Failure path:** temporarily set one `expect_status` wrong and rerun. The script must exit non-zero and leave `tests/fixtures/` unchanged (`git status --porcelain tests/fixtures/` prints nothing). Then revert the change.
 - **Tooling still clean:** `uv run ruff check . && uv run ruff format --check .`, `uv run mypy src scripts`, and `uv run pytest` still exit 5 (no tests yet).
 - **Docs:** `grep -n "unverified except #6\|Only lens #6" README.md CLAUDE.md` returns no hits.
 
