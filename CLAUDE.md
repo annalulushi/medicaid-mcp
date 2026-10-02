@@ -4,33 +4,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-Design-only. No server code exists yet: `main.py` is a `uv init` greeting stub (deleted at step 1), and `pyproject.toml` has `dependencies = []` and no `[build-system]`. Work proceeds by the numbered steps in the implementation plan, and **step 0 gates everything** — do not pin `mcp` or write server code until its open checks are verified.
+Skeleton only. Steps 0 and 1 are done (2026-09-27): `mcp` is pinned `>=2.2.0,<2.3`, and `src/medicaid_mcp/` exists with every module a docstring only — no tools yet. Work proceeds by the numbered steps in the implementation plan; step 2 (dataset discovery) is next. Real code in each module arrives at the step that owns it, test-first.
 
 Three documents, in precedence order when they disagree:
 
 1. `.claude/docs/2026-09-23-impl-plan.md` — order, done-when criteria, settled decisions, verified API findings. **Wins over the design doc.**
-2. `.claude/docs/2026-07-21-mcp-plan.md` — what and why (tool signatures, lenses, error model, non-goals). Stale on package name (`cms_medicaid_mcp`), env-var prefix (`CMS_MEDICAID_*`), step numbering, and the API facts corrected in the plan. Don't edit it to fix these; the plan records the overrides.
+2. `.claude/docs/2026-07-21-mcp-plan.md` — what and why (tool signatures, lenses, error model, non-goals). Stale on package name (`cms_medicaid_mcp`), env-var prefix (`CMS_MEDICAID_*`), the `mcp` `<2.1` pin, step numbering, and the API facts corrected in the plan. Don't edit it to fix these; the plan records the overrides.
 3. `README.md` — public; restates parts of the plan.
 
 **When plan content changes, update the matching README section in the same commit.** The plan's "Keeping the README in sync" table lists the pairs. The README's design-only banner comes off only after step 9's end-to-end check passes against the deployed URL.
 
 ## Commands
 
-Available now:
+Build backend `hatchling`; dev deps `pytest`, `pytest-asyncio` (`asyncio_mode = "auto"`), `ruff`, `mypy` (strict).
 
 ```bash
 uv sync
-```
-
-Planned from step 1 (dev deps `pytest`, `pytest-asyncio`, `ruff`, `mypy`; build backend `hatchling`):
-
-```bash
-uv run pytest                                        # all tests
+uv run pytest                                        # all tests (exit 5 = none collected, expected until step 3)
 uv run pytest tests/test_query.py::test_name         # single test
 uv run ruff check . && uv run ruff format .
 uv run mypy src
-uv run python scripts/smoke.py                       # manual, hits the live API; never in CI
 ```
+
+Planned from step 9: `uv run python scripts/smoke.py` — manual, hits the live API; never in CI.
 
 Commit `uv.lock` (it is intentionally not gitignored).
 
@@ -43,13 +39,13 @@ Package `src/medicaid_mcp/`, a hybrid MCP server over the data.medicaid.gov DKAN
 - **`tools/generic.py`** is the MCP surface: `search_datasets`, `get_dataset`, `list_dataset_columns`, `query_dataset`. It validates input, calls query/client, shapes typed results (`models.py`) for structured output, and re-raises errors as `ToolError`.
 - **`tools/lenses.py`** has eight curated tools, each composing the internal `_query` helper (one query-construction code path). A ninth, `list_1115_waivers`, is deferred until step 2's discovery.
 
-Data flow: `query_dataset` (validate) → `query.translate` → `client.datastore_query` → shaped result. Caching (`cache.py`, in-memory): search 15 min, metadata 1 hour, rows never. `settings.py` reads `MEDICAID_MCP_*` env vars plus unprefixed `PORT`; README's Configuration table is the reference for names and defaults. Transport is stateless streamable HTTP with JSON responses at `/mcp`, plus stdio for local dev. No SSE.
+Data flow: `query_dataset` (validate) → `query.translate` → `client.datastore_query` → shaped result. Caching (`cache.py`, in-memory): search 15 min, metadata 1 hour, rows never. `settings.py` reads `MEDICAID_MCP_*` env vars plus unprefixed `PORT`; README's Configuration table is the reference for names and defaults. Transport is stateless streamable HTTP with JSON responses at `/mcp`, plus stdio for local dev. No SSE. In `mcp` 2.x, `stateless_http=True, json_response=True` go on `MCPServer.streamable_http_app()`, not the constructor.
 
 ## Non-obvious rules
 
 - **Errors go through `ToolError` with the recovery hint in the message** (e.g. "Call list_dataset_columns(...)"). Never return a success-shaped error payload or an empty result where an error occurred.
 - **Verified API facts that contradict the design doc** (full details in the plan, step 0):
-  - `/api/1/search` returns `results` as an object keyed by URI, so iterate `.values()`.
+  - `/api/1/search` returns `results` as an object keyed by URI when there are hits, but `[]` when there are none. Handle both shapes.
   - The id field is `identifier`, not `id`.
   - Column schema is not in the metastore item. `get_dataset` makes two requests: metastore item → distribution `identifier` → `/api/1/datastore/query/{distributionId}`.
   - Metastore requests need `?show-reference-ids`, or the distribution has no id.
